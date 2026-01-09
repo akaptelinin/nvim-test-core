@@ -74,6 +74,8 @@ local vim = {
   _current_tabpage = 1,
   _namespaces = {},
   _next_ns_id = 1,
+  _augroups = {},
+  _next_augroup_id = 1,
   _extmarks = {},
   _highlights = {},
   _hl_groups = {},
@@ -135,11 +137,20 @@ local vim = {
     end,
 
     nvim_create_augroup = function(name, opts)
+      if vim._augroups[name] then
+        if opts and opts.clear then
+          vim._autocmds[name] = { opts = opts, events = {} }
+        end
+        return vim._augroups[name]
+      end
+      local id = vim._next_augroup_id
+      vim._next_augroup_id = vim._next_augroup_id + 1
+      vim._augroups[name] = id
       vim._autocmds[name] = {
         opts = opts,
         events = {},
       }
-      return name
+      return id
     end,
 
     nvim_create_autocmd = function(events, opts)
@@ -176,6 +187,12 @@ local vim = {
 
     nvim_win_get_cursor = function(winid)
       return vim._windows[winid] and vim._windows[winid].cursor or { 1, 0 }
+    end,
+
+    nvim_win_set_cursor = function(winid, pos)
+      if vim._windows[winid] then
+        vim._windows[winid].cursor = pos
+      end
     end,
 
     nvim_buf_get_lines = function(bufnr, start, end_line, strict)
@@ -1058,6 +1075,8 @@ vim._mock = {
     vim._last_error = nil
     vim._namespaces = {}
     vim._next_ns_id = 1
+    vim._augroups = {}
+    vim._next_augroup_id = 1
     vim._extmarks = {}
     vim._highlights = {}
     vim._hl_groups = {}
@@ -1097,6 +1116,26 @@ vim.bo = setmetatable({}, {
         if vim._buffers[bufnr] then
           vim._buffers[bufnr].options = vim._buffers[bufnr].options or {}
           vim._buffers[bufnr].options[opt] = val
+        end
+      end,
+    })
+  end,
+})
+
+-- Window options (vim.wo[winid].option)
+vim.wo = setmetatable({}, {
+  __index = function(_, winid)
+    return setmetatable({}, {
+      __index = function(_, opt)
+        if vim._windows[winid] and vim._windows[winid].options then
+          return vim._windows[winid].options[opt]
+        end
+        return nil
+      end,
+      __newindex = function(_, opt, val)
+        if vim._windows[winid] then
+          vim._windows[winid].options = vim._windows[winid].options or {}
+          vim._windows[winid].options[opt] = val
         end
       end,
     })
