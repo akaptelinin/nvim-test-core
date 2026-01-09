@@ -1081,6 +1081,22 @@ vim._mock = {
     vim._highlights = {}
     vim._hl_groups = {}
   end,
+
+  stub = function(path, fn)
+    local parts = {}
+    for part in path:gmatch("[^.]+") do
+      table.insert(parts, part)
+    end
+
+    local target = vim
+    for i = 1, #parts - 1 do
+      if target[parts[i]] == nil then
+        target[parts[i]] = {}
+      end
+      target = target[parts[i]]
+    end
+    target[parts[#parts]] = fn
+  end,
 }
 
 if _G.vim == nil then

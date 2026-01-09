@@ -192,4 +192,42 @@ describe("vim_mock", function()
 			assert.equals(0, #bufs)
 		end)
 	end)
+
+	describe("stub", function()
+		it("overrides api function", function()
+			vim._mock.stub("api.nvim_buf_get_name", function(bufnr)
+				return "/stubbed/path.go"
+			end)
+			assert.equals("/stubbed/path.go", vim.api.nvim_buf_get_name(1))
+			assert.equals("/stubbed/path.go", vim.api.nvim_buf_get_name(999))
+		end)
+
+		it("overrides fn function", function()
+			vim._mock.stub("fn.getcwd", function()
+				return "/my/custom/dir"
+			end)
+			assert.equals("/my/custom/dir", vim.fn.getcwd())
+		end)
+
+		it("overrides deeply nested path", function()
+			vim._mock.stub("lsp.buf.format", function()
+				return "formatted"
+			end)
+			assert.equals("formatted", vim.lsp.buf.format())
+		end)
+
+		it("creates intermediate tables if needed", function()
+			vim._mock.stub("custom.nested.deep.func", function()
+				return 42
+			end)
+			assert.equals(42, vim.custom.nested.deep.func())
+		end)
+
+		it("overrides single level", function()
+			vim._mock.stub("notify", function(msg)
+				return "notified: " .. msg
+			end)
+			assert.equals("notified: hello", vim.notify("hello"))
+		end)
+	end)
 end)
