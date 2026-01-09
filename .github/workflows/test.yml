@@ -25,5 +25,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd lua/nvim-test-core
-          lua -e "require('init')" && echo "Module loads successfully"
+          export LUA_PATH="./lua/?.lua;./lua/?/init.lua;$LUA_PATH"
+          lua -e "require('nvim-test-core')" && echo "Module loads successfully"
