@@ -72,8 +72,61 @@ local vim = {
   _current_window = 1000,
   _tabs = { [1] = true },
   _current_tabpage = 1,
+  _namespaces = {},
+  _next_ns_id = 1,
+  _extmarks = {},
+  _highlights = {},
+  _hl_groups = {},
 
   api = {
+    nvim_create_namespace = function(name)
+      if vim._namespaces[name] then
+        return vim._namespaces[name]
+      end
+      local id = vim._next_ns_id
+      vim._next_ns_id = vim._next_ns_id + 1
+      vim._namespaces[name] = id
+      return id
+    end,
+
+    nvim_buf_set_extmark = function(bufnr, ns_id, line, col, opts)
+      vim._extmarks[ns_id] = vim._extmarks[ns_id] or {}
+      local mark_id = #vim._extmarks[ns_id] + 1
+      vim._extmarks[ns_id][mark_id] = {
+        bufnr = bufnr,
+        line = line,
+        col = col,
+        opts = opts,
+      }
+      return mark_id
+    end,
+
+    nvim_buf_clear_namespace = function(bufnr, ns_id, line_start, line_end)
+      if vim._extmarks[ns_id] then
+        vim._extmarks[ns_id] = {}
+      end
+      if vim._highlights[ns_id] then
+        vim._highlights[ns_id] = {}
+      end
+    end,
+
+    nvim_buf_add_highlight = function(bufnr, ns_id, hl_group, line, col_start, col_end)
+      vim._highlights[ns_id] = vim._highlights[ns_id] or {}
+      table.insert(vim._highlights[ns_id], {
+        bufnr = bufnr,
+        hl_group = hl_group,
+        line = line,
+        col_start = col_start,
+        col_end = col_end,
+      })
+      return ns_id
+    end,
+
+    nvim_set_hl = function(ns_id, name, opts)
+      vim._hl_groups[name] = opts
+    end,
+
+
     nvim_create_user_command = function(name, callback, opts)
       vim._commands[name] = {
         callback = callback,
@@ -1003,6 +1056,11 @@ vim._mock = {
     vim._last_command = nil
     vim._last_echo = nil
     vim._last_error = nil
+    vim._namespaces = {}
+    vim._next_ns_id = 1
+    vim._extmarks = {}
+    vim._highlights = {}
+    vim._hl_groups = {}
   end,
 }
 
@@ -1024,5 +1082,44 @@ vim.o = setmetatable({ columns = 120, lines = 40 }, {
     vim._options[k] = v
   end,
 })
+
+-- Buffer options (vim.bo[bufnr].option)
+vim.bo = setmetatable({}, {
+  __index = function(_, bufnr)
+    return setmetatable({}, {
+      __index = function(_, opt)
+        if vim._buffers[bufnr] and vim._buffers[bufnr].options then
+          return vim._buffers[bufnr].options[opt]
+        end
+        return nil
+      end,
+      __newindex = function(_, opt, val)
+        if vim._buffers[bufnr] then
+          vim._buffers[bufnr].options = vim._buffers[bufnr].options or {}
+          vim._buffers[bufnr].options[opt] = val
+        end
+      end,
+    })
+  end,
+})
+
+-- Treesitter stub (returns nil parser to skip treesitter-dependent code in tests)
+vim.treesitter = {
+  get_parser = function(bufnr, lang)
+    return nil
+  end,
+  query = {
+    parse = function(lang, query_str)
+      return {
+        iter_captures = function(self, root, bufnr)
+          return function() return nil end
+        end,
+      }
+    end,
+  },
+  get_node_text = function(node, bufnr)
+    return ""
+  end,
+}
 
 return vim
