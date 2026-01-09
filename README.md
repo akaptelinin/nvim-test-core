@@ -1,5 +1,8 @@
 # nvim-test-core
 
+[![Tests](https://github.com/akaptelinin/nvim-test-core/actions/workflows/test.yml/badge.svg)](https://github.com/akaptelinin/nvim-test-core/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Reusable test infrastructure for Neovim plugins. Provides a comprehensive vim API mock and busted test helpers.
 
 ## Credits
