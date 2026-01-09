@@ -1,5 +1,5 @@
 -- Test setup for busted
--- Based on https://github.com/anthropics/claude-code/tree/main/packages/neovim
+-- Based on https://github.com/coder/claudecode.nvim
 
 -- Create mock vim API if we're running tests outside of Neovim
 if not _G.vim then

@@ -4,7 +4,7 @@ Reusable test infrastructure for Neovim plugins. Provides a comprehensive vim AP
 
 ## Credits
 
-Based on the test infrastructure from [claudecode.nvim](https://github.com/anthropics/claude-code/tree/main/packages/neovim) by Anthropic.
+Based on the test infrastructure from [claudecode.nvim](https://github.com/coder/claudecode.nvim) by [Coder Technologies Inc.](https://github.com/coder)
 
 ## What's included
 
