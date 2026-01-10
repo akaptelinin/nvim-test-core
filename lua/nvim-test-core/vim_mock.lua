@@ -79,6 +79,11 @@ local vim = {
   _extmarks = {},
   _highlights = {},
   _hl_groups = {},
+  _diagnostics = {},
+  _executables = {},
+  _readable_files = {},
+  _jobs = {},
+  _next_job_id = 1,
 
   api = {
     nvim_create_namespace = function(name)
@@ -512,13 +517,48 @@ local vim = {
     end,
 
     filereadable = function(path)
-      -- Check if file actually exists
+      -- Check mock readable files first
+      if vim._readable_files[path] then
+        return 1
+      end
+      -- Fallback to actual file check
       local file = io.open(path, "r")
       if file then
         file:close()
         return 1
       end
       return 0
+    end,
+
+    executable = function(path)
+      return vim._executables[path] and 1 or 0
+    end,
+
+    exepath = function(cmd)
+      -- Check if command is in executables mock
+      for path, _ in pairs(vim._executables) do
+        if path:match(cmd .. "$") then
+          return path
+        end
+      end
+      return ""
+    end,
+
+    jobstart = function(cmd, opts)
+      local job_id = vim._next_job_id
+      vim._next_job_id = vim._next_job_id + 1
+      vim._jobs[job_id] = {
+        cmd = cmd,
+        opts = opts,
+        running = true,
+      }
+      -- Immediately call on_exit with success for testing
+      if opts and opts.on_exit then
+        vim.schedule(function()
+          opts.on_exit(job_id, 0, "exit")
+        end)
+      end
+      return job_id
     end,
 
     bufnr = function(name)
@@ -562,6 +602,14 @@ local vim = {
     fnamemodify = function(path, modifier)
       if modifier == ":t" then
         return path:match("([^/]+)$") or path
+      elseif modifier == ":h" then
+        return path:match("(.+)/[^/]*$") or "/"
+      elseif modifier == ":p" then
+        return path
+      elseif modifier == ":e" then
+        return path:match("%.([^./]+)$") or ""
+      elseif modifier == ":r" then
+        return path:match("(.+)%.[^./]+$") or path
       end
       return path
     end,
@@ -1026,6 +1074,46 @@ local vim = {
     warn = function(...) end,
     error = function(...) end,
   },
+
+  diagnostic = {
+    severity = {
+      ERROR = 1,
+      WARN = 2,
+      INFO = 3,
+      HINT = 4,
+    },
+    set = function(ns_id, bufnr, diagnostics, opts)
+      vim._diagnostics[ns_id] = vim._diagnostics[ns_id] or {}
+      vim._diagnostics[ns_id][bufnr] = diagnostics
+    end,
+    get = function(bufnr, opts)
+      local result = {}
+      local ns_id = opts and opts.namespace
+      if ns_id then
+        if vim._diagnostics[ns_id] and vim._diagnostics[ns_id][bufnr] then
+          return vim._diagnostics[ns_id][bufnr]
+        end
+      else
+        for _, ns_diags in pairs(vim._diagnostics) do
+          if ns_diags[bufnr] then
+            for _, d in ipairs(ns_diags[bufnr]) do
+              table.insert(result, d)
+            end
+          end
+        end
+      end
+      return result
+    end,
+    reset = function(ns_id, bufnr)
+      if vim._diagnostics[ns_id] then
+        if bufnr then
+          vim._diagnostics[ns_id][bufnr] = nil
+        else
+          vim._diagnostics[ns_id] = {}
+        end
+      end
+    end,
+  },
 }
 
 -- Helper function to split lines
@@ -1080,6 +1168,19 @@ vim._mock = {
     vim._extmarks = {}
     vim._highlights = {}
     vim._hl_groups = {}
+    vim._diagnostics = {}
+    vim._executables = {}
+    vim._readable_files = {}
+    vim._jobs = {}
+    vim._next_job_id = 1
+  end,
+
+  set_executable = function(path, value)
+    vim._executables[path] = value and true or nil
+  end,
+
+  set_file_readable = function(path, value)
+    vim._readable_files[path] = value and true or nil
   end,
 
   stub = function(path, fn)
