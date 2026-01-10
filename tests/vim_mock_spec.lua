@@ -134,6 +134,19 @@ describe("vim_mock", function()
 			})
 			assert.is_number(id)
 		end)
+
+		it("nvim_create_autocmd with group ID stores in correct group", function()
+			local group_id = vim.api.nvim_create_augroup("MyGroup", { clear = true })
+			vim.api.nvim_create_autocmd("ColorScheme", {
+				group = group_id,
+				callback = function() end,
+			})
+			local group_data = vim._autocmds["MyGroup"]
+			assert.is_table(group_data)
+			assert.is_table(group_data.events)
+			assert.equals(1, #group_data.events)
+			assert.equals("ColorScheme", group_data.events[1].events)
+		end)
 	end)
 
 	describe("user commands", function()

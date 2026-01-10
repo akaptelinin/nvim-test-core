@@ -75,6 +75,7 @@ local vim = {
   _namespaces = {},
   _next_ns_id = 1,
   _augroups = {},
+  _augroup_names = {},
   _next_augroup_id = 1,
   _extmarks = {},
   _highlights = {},
@@ -151,6 +152,7 @@ local vim = {
       local id = vim._next_augroup_id
       vim._next_augroup_id = vim._next_augroup_id + 1
       vim._augroups[name] = id
+      vim._augroup_names[id] = name
       vim._autocmds[name] = {
         opts = opts,
         events = {},
@@ -160,6 +162,9 @@ local vim = {
 
     nvim_create_autocmd = function(events, opts)
       local group = opts.group or "default"
+      if type(group) == "number" then
+        group = vim._augroup_names[group] or "default"
+      end
       if not vim._autocmds[group] then
         vim._autocmds[group] = {
           opts = {},
@@ -1164,6 +1169,7 @@ vim._mock = {
     vim._namespaces = {}
     vim._next_ns_id = 1
     vim._augroups = {}
+    vim._augroup_names = {}
     vim._next_augroup_id = 1
     vim._extmarks = {}
     vim._highlights = {}
