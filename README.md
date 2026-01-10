@@ -27,12 +27,12 @@ busted tests/  # just lua, no neovim
 |--------|----------|-------|
 | `vim.api` (buffers, windows, tabs) | ✅ Good | Core CRUD operations |
 | `vim.api` (autocmds, namespaces) | ✅ Good | Basic functionality |
-| `vim.fn` | ⚠️ Partial | ~20 common functions |
+| `vim.fn` | ⚠️ Partial | ~25 common functions |
 | `vim.bo`, `vim.wo`, `vim.o` | ✅ Good | Options tables |
 | `vim.loop` | ⚠️ Stubs | TCP/timers return stubs |
+| `vim.diagnostic` | ✅ Good | set/get/reset |
 | `vim.treesitter` | ❌ Stub | Returns nil |
 | `vim.lsp` | ❌ Not included | Use `stub()` if needed |
-| `vim.diagnostic` | ❌ Not included | Use `stub()` if needed |
 
 **If something is missing — use `stub()` to add it.**
 
@@ -80,6 +80,12 @@ vim._mock.add_buffer(1, "/path/file.go", "line1\nline2", { filetype = "go" })
 
 -- Add window attached to buffer
 vim._mock.add_window(1000, 1, { 5, 10 })  -- winid, bufnr, cursor {line, col}
+
+-- Mock executable files (for vim.fn.executable, vim.fn.exepath)
+vim._mock.set_executable("/usr/bin/go", true)
+
+-- Mock readable files (for vim.fn.filereadable)
+vim._mock.set_file_readable("/project/go.mod", true)
 
 -- Reset all state between tests
 vim._mock.reset()
