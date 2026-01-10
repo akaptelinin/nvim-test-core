@@ -134,6 +134,21 @@ local vim = {
       vim._hl_groups[name] = opts
     end,
 
+    nvim_get_hl = function(ns_id, opts)
+      opts = opts or {}
+      local name = opts.name
+      if not name then
+        return {}
+      end
+      local hl = vim._hl_groups[name]
+      if not hl then
+        return {}
+      end
+      if opts.link == false then
+        return hl
+      end
+      return hl
+    end,
 
     nvim_create_user_command = function(name, callback, opts)
       vim._commands[name] = {
